@@ -33,13 +33,13 @@ if (!defined('VMP_PLUGIN_BASENAME')) {
     define('VMP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 }
 
-// ─── Autoloader ─────────────────────────────────────────────────────────────
+// ─── Autoloader ──────────────────────────────────────────────────────────
 $autoload = VMP_PLUGIN_DIR . 'vendor/autoload.php';
 if (file_exists($autoload)) {
     require_once $autoload;
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────
 $helpers = VMP_PLUGIN_DIR . 'app/Support/helpers.php';
 if (file_exists($helpers)) {
     require_once $helpers;
@@ -70,8 +70,29 @@ if (!$app instanceof \VMP\Core\Application) {
     return;
 }
 
-// ─── Register & Boot ────────────────────────────────────────────────────────
+// Debug: log bootstrap success when WP_DEBUG is enabled
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('[VMP] bootstrap loaded, Application instance: ' . (is_object($app) ? get_class($app) : gettype($app)));
+}
+
+// ─── Register & Boot ───────────────────────────────────────────────────────
 add_action('plugins_loaded', static function () use ($app): void {
-    $app->register();
-    $app->boot();
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[VMP] plugins_loaded fired, starting app->register and app->boot');
+    }
+    try {
+        $app->register();
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[VMP] app->register completed');
+        }
+        $app->boot();
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[VMP] app->boot completed');
+        }
+    } catch (\Throwable $e) {
+        error_log('[VMP] Exception during plugin boot: ' . $e->getMessage());
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log($e->getTraceAsString());
+        }
+    }
 }, 20);
