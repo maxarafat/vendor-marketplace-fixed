@@ -307,6 +307,20 @@ class SubscriptionService
             throw new Exception(__('حدث خطأ أثناء تقديم طلب التغيير', 'vmp'));
         }
 
+        // Notify the system (events + WP action) so admin notifications can be handled by listeners
+        try {
+            $this->eventManager->trigger('vmp_plan_change_requested', $requestId, $vendorId, $newPlanId);
+        } catch (Exception $e) {
+            $this->logger->error('فشل إطلاق حدث طلب تغيير الخطة: ' . $e->getMessage());
+        }
+
+        // Also fire a WordPress action for backward compatibility / plugin hooks
+        try {
+            do_action('vmp_plan_change_requested', $requestId, $vendorId, $newPlanId);
+        } catch (\Throwable $e) {
+            $this->logger->error('فشل تنفيذ action vmp_plan_change_requested: ' . $e->getMessage());
+        }
+
         return $requestId;
     }
 
