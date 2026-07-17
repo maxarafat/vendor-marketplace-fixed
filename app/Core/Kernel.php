@@ -51,12 +51,12 @@ class Kernel
 
         foreach ($this->providers as $providerClass) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("[VMP][Kernel] testing provider: {$providerClass} (class_exists=" . (class_exists($providerClass) ? 'yes' : 'no') . ")");
+                error_log('[VMP][Kernel] testing provider: ' . $providerClass . ' (class_exists=' . (class_exists($providerClass) ? 'yes' : 'no') . ')');
             }
 
             if (!class_exists($providerClass)) {
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("[VMP][Kernel] provider class missing: {$providerClass}");
+                    error_log('[VMP][Kernel] provider class missing: ' . $providerClass);
                 }
                 continue;
             }
@@ -101,7 +101,7 @@ class Kernel
 
         // 1. InstallServiceProvider
         foreach ($this->providerInstances as $provider) {
-            if ($provider instanceof \\VMP\\Providers\\InstallServiceProvider) {
+            if ($provider instanceof \VMP\Providers\InstallServiceProvider) {
                 if (method_exists($provider, 'boot')) {
                     $provider->boot();
                     if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -114,7 +114,7 @@ class Kernel
 
         // 2. WooCommerceServiceProvider
         foreach ($this->providerInstances as $provider) {
-            if ($provider instanceof \\VMP\\Providers\\WooCommerceServiceProvider) {
+            if ($provider instanceof \VMP\Providers\WooCommerceServiceProvider) {
                 if (method_exists($provider, 'boot')) {
                     $provider->boot();
                     if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -127,7 +127,7 @@ class Kernel
 
         // 3. VendorServiceProvider (يسجل الشورت كودات دائماً)
         foreach ($this->providerInstances as $provider) {
-            if ($provider instanceof \\VMP\\Providers\\VendorServiceProvider) {
+            if ($provider instanceof \VMP\Providers\VendorServiceProvider) {
                 if (method_exists($provider, 'boot')) {
                     $provider->boot();
                     if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -144,9 +144,9 @@ class Kernel
 
         // 5. باقي المزودات
         $skipClasses = [
-            \\VMP\\Providers\\InstallServiceProvider::class,
-            \\VMP\\Providers\\WooCommerceServiceProvider::class,
-            \\VMP\\Providers\\VendorServiceProvider::class,
+            \VMP\Providers\InstallServiceProvider::class,
+            \VMP\Providers\WooCommerceServiceProvider::class,
+            \VMP\Providers\VendorServiceProvider::class,
         ];
 
         foreach ($this->providerInstances as $provider) {
