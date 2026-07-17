@@ -15,14 +15,14 @@ class Kernel
     private Container $container;
 
     private array $providers = [
-        '\\VMP\\Providers\\InstallServiceProvider',
-        '\\VMP\\Providers\\CoreServiceProvider',
-        '\\VMP\\Providers\\EventServiceProvider',   // ← نظام الأحداث والمستمعين
-        '\\VMP\\Providers\\WooCommerceServiceProvider',
-        '\\VMP\\Providers\\AdminServiceProvider',
-        '\\VMP\\Providers\\VendorServiceProvider',
-        '\\VMP\\Providers\\ApiServiceProvider',
-        '\\VMP\\Providers\\CronServiceProvider',
+        \VMP\Providers\InstallServiceProvider::class,
+        \VMP\Providers\CoreServiceProvider::class,
+        \VMP\Providers\EventServiceProvider::class,   // ← نظام الأحداث والمستمعين
+        \VMP\Providers\WooCommerceServiceProvider::class,
+        \VMP\Providers\AdminServiceProvider::class,
+        \VMP\Providers\VendorServiceProvider::class,
+        \VMP\Providers\ApiServiceProvider::class,
+        \VMP\Providers\CronServiceProvider::class,
     ];
 
     private array $providerInstances = [];
