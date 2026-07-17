@@ -15,14 +15,14 @@ class Kernel
     private Container $container;
 
     private array $providers = [
-        '\VMP\Providers\InstallServiceProvider',
-        '\VMP\Providers\CoreServiceProvider',
-        '\VMP\Providers\EventServiceProvider',   // ← نظام الأحداث والمستمعين
-        '\VMP\Providers\WooCommerceServiceProvider',
-        '\VMP\Providers\AdminServiceProvider',
-        '\VMP\Providers\VendorServiceProvider',
-        '\VMP\Providers\ApiServiceProvider',
-        '\VMP\Providers\CronServiceProvider',
+        '\\VMP\\Providers\\InstallServiceProvider',
+        '\\VMP\\Providers\\CoreServiceProvider',
+        '\\VMP\\Providers\\EventServiceProvider',   // ← نظام الأحداث والمستمعين
+        '\\VMP\\Providers\\WooCommerceServiceProvider',
+        '\\VMP\\Providers\\AdminServiceProvider',
+        '\\VMP\\Providers\\VendorServiceProvider',
+        '\\VMP\\Providers\\ApiServiceProvider',
+        '\\VMP\\Providers\\CronServiceProvider',
     ];
 
     private array $providerInstances = [];
@@ -45,17 +45,46 @@ class Kernel
      */
     public function register(): void
     {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[VMP][Kernel] register() started');
+        }
+
         foreach ($this->providers as $providerClass) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("[VMP][Kernel] testing provider: {$providerClass} (class_exists=" . (class_exists($providerClass) ? 'yes' : 'no') . ")");
+            }
+
             if (!class_exists($providerClass)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("[VMP][Kernel] provider class missing: {$providerClass}");
+                }
                 continue;
             }
 
-            $provider = new $providerClass($this->container);
-            $this->providerInstances[] = $provider;
+            try {
+                $provider = new $providerClass($this->container);
+                $this->providerInstances[] = $provider;
 
-            if (method_exists($provider, 'register')) {
-                $provider->register();
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('[VMP][Kernel] provider instantiated: ' . get_class($provider));
+                }
+
+                if (method_exists($provider, 'register')) {
+                    $provider->register();
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('[VMP][Kernel] provider->register() executed: ' . get_class($provider));
+                    }
+                }
+            } catch (\Throwable $e) {
+                error_log('[VMP][Kernel] Exception instantiating/registering provider ' . $providerClass . ': ' . $e->getMessage());
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log($e->getTraceAsString());
+                }
             }
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[VMP][Kernel] register() completed. Providers instantiated: ' . count($this->providerInstances));
         }
     }
 
@@ -66,11 +95,18 @@ class Kernel
      */
     public function boot(): void
     {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[VMP][Kernel] boot() started');
+        }
+
         // 1. InstallServiceProvider
         foreach ($this->providerInstances as $provider) {
-            if ($provider instanceof \VMP\Providers\InstallServiceProvider) {
+            if ($provider instanceof \\VMP\\Providers\\InstallServiceProvider) {
                 if (method_exists($provider, 'boot')) {
                     $provider->boot();
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('[VMP][Kernel] InstallServiceProvider->boot() executed');
+                    }
                 }
                 break;
             }
@@ -78,9 +114,12 @@ class Kernel
 
         // 2. WooCommerceServiceProvider
         foreach ($this->providerInstances as $provider) {
-            if ($provider instanceof \VMP\Providers\WooCommerceServiceProvider) {
+            if ($provider instanceof \\VMP\\Providers\\WooCommerceServiceProvider) {
                 if (method_exists($provider, 'boot')) {
                     $provider->boot();
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('[VMP][Kernel] WooCommerceServiceProvider->boot() executed');
+                    }
                 }
                 break;
             }
@@ -88,9 +127,12 @@ class Kernel
 
         // 3. VendorServiceProvider (يسجل الشورت كودات دائماً)
         foreach ($this->providerInstances as $provider) {
-            if ($provider instanceof \VMP\Providers\VendorServiceProvider) {
+            if ($provider instanceof \\VMP\\Providers\\VendorServiceProvider) {
                 if (method_exists($provider, 'boot')) {
                     $provider->boot();
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('[VMP][Kernel] VendorServiceProvider->boot() executed');
+                    }
                 }
                 break;
             }
@@ -102,9 +144,9 @@ class Kernel
 
         // 5. باقي المزودات
         $skipClasses = [
-            \VMP\Providers\InstallServiceProvider::class,
-            \VMP\Providers\WooCommerceServiceProvider::class,
-            \VMP\Providers\VendorServiceProvider::class,
+            \\VMP\\Providers\\InstallServiceProvider::class,
+            \\VMP\\Providers\\WooCommerceServiceProvider::class,
+            \\VMP\\Providers\\VendorServiceProvider::class,
         ];
 
         foreach ($this->providerInstances as $provider) {
@@ -112,7 +154,17 @@ class Kernel
                 continue;
             }
             if (method_exists($provider, 'boot')) {
-                $provider->boot();
+                try {
+                    $provider->boot();
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('[VMP][Kernel] provider->boot() executed: ' . get_class($provider));
+                    }
+                } catch (\Throwable $e) {
+                    error_log('[VMP][Kernel] Exception during provider->boot ' . get_class($provider) . ': ' . $e->getMessage());
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log($e->getTraceAsString());
+                    }
+                }
             }
         }
 
@@ -121,6 +173,10 @@ class Kernel
 
         // 7. تحميل ملفات اللغة
         $this->loadTextDomain();
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[VMP][Kernel] boot() completed');
+        }
     }
 
     /**
@@ -151,7 +207,17 @@ class Kernel
         ];
 
         foreach ($modules as $module) {
-            $manager->load_module($module);
+            try {
+                $manager->load_module($module);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('[VMP][Kernel] module loaded: ' . $module);
+                }
+            } catch (\Throwable $e) {
+                error_log('[VMP][Kernel] Exception loading module ' . $module . ': ' . $e->getMessage());
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log($e->getTraceAsString());
+                }
+            }
         }
     }
 
