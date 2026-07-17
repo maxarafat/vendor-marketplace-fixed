@@ -6,7 +6,9 @@ defined('ABSPATH') || exit;
 use VMP\Services\VendorService;
 use VMP\Http\Requests\RegisterVendorRequest;
 use VMP\Http\Responses\SuccessResponse;
+use VMP\Http\Responses\ErrorResponse;
 use VMP\Http\Responses\ApiResponse;
+use VMP\Exceptions\ServiceException;
 
 /**
  * Class VendorController
@@ -26,17 +28,52 @@ class VendorController extends BaseController
      */
     public function registerVendor(RegisterVendorRequest $request): ApiResponse
     {
-        // 1. تحويل الـ Request إلى DTO
-        $dto = $request->toDTO();
+        try {
+            // 1. تحويل الـ Request إلى DTO
+            $dto = $request->toDTO();
 
-        // 2. معالجة العمليات عبر طبقة الخدمة
-        $vendor = $this->vendorService->registerVendor($dto);
+            // 2. معالجة العمليات عبر طبقة الخدمة
+            $vendor = $this->vendorService->registerVendor($dto);
 
-        // 3. إعادة استجابة ناجحة
-        return new SuccessResponse(
-            data: $vendor->toArray(),
-            message: __('تم تقديم طلب التسجيل بنجاح، يرجى الانتظار لحين المراجعة.', 'vmp')
-        );
+            // 3. إعداد بيانات الاستجابة
+            $vendorArray = [];
+            if ($vendor instanceof \VMP\DTO\VendorDTO) {
+                $vendorArray = $vendor->toArray();
+            } elseif (is_array($vendor)) {
+                $vendorArray = $vendor;
+            }
+
+            // 4. إرجاع استجابة ناجحة مع redirect إلى لوحة البائع
+            return new SuccessResponse(
+                data: array_merge($vendorArray, ['redirect' => home_url('/vendor-dashboard/')]),
+                message: __('تم تقديم طلب التسجيل بنجاح، يرجى الانتظار لحين المراجعة.', 'vmp')
+            );
+
+        } catch (ServiceException $e) {
+            $msg = $e->getMessage();
+
+            // حالة: المستخدم لديه حساب بائع موجود مسبقاً
+            if (mb_stripos($msg, 'حساب بائع') !== false || mb_stripos($msg, 'لديك حساب بائع') !== false) {
+                return new SuccessResponse(
+                    data: ['redirect' => home_url('/vendor-dashboard/')],
+                    message: __('لديك حساب بائع مسجّل مسبقاً — جاري تحويلك إلى لوحة البائع.', 'vmp')
+                );
+            }
+
+            return new ErrorResponse(
+                message: $msg,
+                additionalData: ['message' => $msg],
+                statusCode: 400
+            );
+        } catch (\Throwable $e) {
+            // Unexpected errors
+            error_log('[VMP][VendorController] Unexpected error during registerVendor: ' . $e->getMessage());
+            return new ErrorResponse(
+                message: __('حدث خطأ أثناء معالجة الطلب.', 'vmp'),
+                additionalData: ['error' => $e->getMessage()],
+                statusCode: 500
+            );
+        }
     }
 
     /**
