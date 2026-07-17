@@ -80,6 +80,21 @@ final class VendorDTO extends BaseDTO
     }
 
     /**
+     * Create DTO from object (stdClass) or array.
+     * Backwards-compatible helper used across the codebase where repository returns objects.
+     *
+     * @param object|array $data
+     * @return static
+     */
+    public static function fromObject(object|array $data): static
+    {
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
+        return self::fromArray(is_array($data) ? $data : []);
+    }
+
+    /**
      * ToArray functionality helper.
      *
      * @return array Output payload.
